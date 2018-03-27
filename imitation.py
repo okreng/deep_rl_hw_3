@@ -40,25 +40,35 @@ class Imitation():
         # - a list of rewards, indexed by time step
         # TODO: Implement this method.
 
-        num_episodes = 1  # TODO: 10, 50, and 100 episodes
-
-        for episode in range(num_episodes):
-        	done = False
-        	state = env.reset()  # Restart the environment
-        	while not done:  
-        		# state = np.reshape(state, (1, -1))
-        		print(state.shape)
-        		action = model.evaluate(x = state, verbose = 0)  # Get action from model
-        		state, reward, done, info = env.step(action)
-
-
-        		if render:
-        			env.render()
-
         states = []
         actions = []
         rewards = []
+        num_episodes = 2  # TODO: 10, 50, and 100 episodes
 
+        for episode in range(num_episodes):
+
+        	# TODO: Create first index by episode?  Seems reasonable
+        	e_states = []
+        	e_actions = []
+        	e_rewards = []
+
+        	done = False
+        	state = env.reset()  # Restart the environment
+        	while not done:  
+        		e_states.append(state)  # TODO: Should this be done before or after reshape?
+        		state = np.array([state])
+        		model_output = model.predict(x = state, verbose = 0)  # Get action from model
+        		action = np.argmax(model_output)
+        		e_actions.append(action)
+        		state, reward, done, info = env.step(action)
+        		e_rewards.append(reward)
+        		if render:
+        			env.render()
+
+        	# Add episode to list
+        	states.append(e_states)
+        	actions.append(e_actions)
+        	rewards.append(e_rewards)
 
 
         return states, actions, rewards
@@ -115,8 +125,13 @@ def main(args):
     #       performance.
     imitation = Imitation(model_config_path, expert_weights_path)
     states, actions, rewards = imitation.generate_episode(imitation.expert, env, render)
-    
 
+    # TODO: Delete this once no longer in use for troubleshooting
+    # print(states)
+    # raw_input()
+    # print(actions)
+    # raw_input()
+    # print(rewards)
 
 
 if __name__ == '__main__':
