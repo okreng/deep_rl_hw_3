@@ -12,6 +12,9 @@ class Imitation():
         with open(model_config_path, 'r') as f:
             self.expert = keras.models.model_from_json(f.read())
         self.expert.load_weights(expert_weights_path)
+
+        # Arguments are required for compilation, but not used for expert
+        self.expert.compile(optimizer='Adam', loss='categorical_crossentropy') 
         
         # Initialize the cloned model (to be trained).
         with open(model_config_path, 'r') as f:
@@ -36,9 +39,28 @@ class Imitation():
         # - a list of actions, indexed by time step
         # - a list of rewards, indexed by time step
         # TODO: Implement this method.
+
+        num_episodes = 1  # TODO: 10, 50, and 100 episodes
+
+        for episode in range(num_episodes):
+        	done = False
+        	state = env.reset()  # Restart the environment
+        	while not done:  
+        		# state = np.reshape(state, (1, -1))
+        		print(state.shape)
+        		action = model.evaluate(x = state, verbose = 0)  # Get action from model
+        		state, reward, done, info = env.step(action)
+
+
+        		if render:
+        			env.render()
+
         states = []
         actions = []
         rewards = []
+
+
+
         return states, actions, rewards
     
     def train(self, env, num_episodes=100, num_epochs=50, render=False):
@@ -91,6 +113,10 @@ def main(args):
     
     # TODO: Train cloned models using imitation learning, and record their
     #       performance.
+    imitation = Imitation(model_config_path, expert_weights_path)
+    states, actions, rewards = imitation.generate_episode(imitation.expert, env, render)
+    
+
 
 
 if __name__ == '__main__':
