@@ -1,3 +1,9 @@
+## Important note for repository
+DO NOT use the "git add ." command after modifying files
+The ./env folder is ignored because it is enormous and cannot be uploaded
+use "git add -u" instead
+If new files are added in the workspace use git add <filename> to add them
+
 ## Setup:  
 I was able to install the environment using the following commands:
 
