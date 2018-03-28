@@ -12,13 +12,29 @@ class Imitation():
         with open(model_config_path, 'r') as f:
             self.expert = keras.models.model_from_json(f.read())
         self.expert.load_weights(expert_weights_path)
+
+        # Arguments are required for compilation, but not used for expert
+        # self.expert.compile(optimizer='Adam', loss='categorical_crossentropy') 
         
         # Initialize the cloned model (to be trained).
         with open(model_config_path, 'r') as f:
             self.model = keras.models.model_from_json(f.read())
 
+        # TODO: Delete once done troubleshooting, weights appear to be correct
+        # print(self.model.get_weights())
+
         # TODO: Define any training operations and optimizers here, initialize
         #       your variables, or alternatively compile your model here.
+
+        # TODO: Arguments specified in pdf.  There are multiple crossentropy functions in Keras, however
+        self.model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['accuracy']) 
+
+        # TODO: Delete this once no longer in use, taken from env.reset()
+        # test_state = np.array([[0.0061801, 0.93431817, 0.62596564, -0.41969598, -0.00715443, -0.1417985, 0.0, 0.0]])
+        # print(test_state.shape)
+        # print(self.model.predict(x=test_state, verbose=1))
+        # raw_input()
+
 
     def run_expert(self, env, render=False):
         # Generates an episode by running the expert policy on the given env.
@@ -36,9 +52,38 @@ class Imitation():
         # - a list of actions, indexed by time step
         # - a list of rewards, indexed by time step
         # TODO: Implement this method.
+
         states = []
         actions = []
         rewards = []
+        num_episodes = 1  # TODO: 10, 50, and 100 episodes
+
+        for episode in range(num_episodes):
+
+        	# TODO: Create first index by episode?  Seems reasonable
+        	e_states = []
+        	e_actions = []
+        	e_rewards = []
+
+        	done = False
+        	state = env.reset()  # Restart the environment
+        	while not done:  
+        		e_states.append(state)  # TODO: Should this be done before or after reshape?
+        		state = np.array([state])
+        		model_output = model.predict(x = state, verbose = 0)  # Get action from model
+        		action = np.argmax(model_output)  # Equivalent to greedy policy
+        		e_actions.append(action)
+        		state, reward, done, info = env.step(action)
+        		e_rewards.append(reward)
+        		if render:
+        			env.render()
+
+        	# Add episode to list
+        	states.append(e_states)
+        	actions.append(e_actions)
+        	rewards.append(e_rewards)
+
+
         return states, actions, rewards
     
     def train(self, env, num_episodes=100, num_epochs=50, render=False):
@@ -91,6 +136,15 @@ def main(args):
     
     # TODO: Train cloned models using imitation learning, and record their
     #       performance.
+    imitation = Imitation(model_config_path, expert_weights_path)
+    
+    # states, actions, rewards = imitation.generate_episode(imitation.expert, env, render)
+
+    # TODO: Delete this for submission.  Toggle to check that model crashes w/o training
+    states, actions, rewards = imitation.generate_episode(imitation.model, env, render)
+    print(rewards)
+    raw_input("Did it crash? (ends in -100)")
+
 
 
 if __name__ == '__main__':
