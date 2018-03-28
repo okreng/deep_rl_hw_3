@@ -4,7 +4,7 @@ import numpy as np
 import keras
 import random
 import gym
-
+import matplotlib.pyplot as plt
 
 class Imitation():
     def __init__(self, model_config_path, expert_weights_path):
