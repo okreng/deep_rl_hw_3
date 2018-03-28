@@ -6,6 +6,7 @@ import random
 import gym
 
 ACTION_SPACE = 4
+STATE_SPACE = 8
 
 class Imitation():
     def __init__(self, model_config_path, expert_weights_path):
@@ -105,30 +106,18 @@ class Imitation():
         acc = 0
 
         # TODO: Add if statement to make loading a possibility
-        self.expert_states = []
-        self.expert_actions = []
-        self.expert_rewards = []
+        self.expert_states = np.empty((0,STATE_SPACE))
+        self.expert_actions = np.empty((0, ACTION_SPACE))
+        # self.expert_rewards = np.empty((0, 1))
         for episode in range(num_episodes):
-        	episode_states, episode_actions, episode_rewards \
+        	# TODO: rewards needed?
+        	episode_states, episode_actions, _ \
         	= self.run_expert(env, render)
 
-        	self.expert_states.append(np.array(episode_states))
-        	self.expert_actions.append(np.array(episode_actions))
-        	self.expert_rewards.append(np.array(episode_rewards))
-
-        # TODO: Determine how to generalize to multiple episodes
-        # Code above here works for 1 episode, multiple epochs, if jump to fit statement
-
-        # self.expert_states = np.array([self.expert_states])
-        # self.expert_actions = np.array([self.expert_actions])
-
-        # self.expert_states = np.reshape(self.expert_states, (-1, 1))
-        # self.expert_states = np.array([self.expert_states])
-        # self.expert_actions = np.reshape(self.expert_actions, (-1, 1))
-        # self.expert_rewards = np.reshape(self.expert_rewards, (-1, 1))
-
-        # print(self.expert_states.shape)
-        # raw_input()
+        	# Episodes will be concatenated together into single array
+        	self.expert_states = np.concatenate([self.expert_states, episode_states])
+        	self.expert_actions = np.concatenate([self.expert_actions, episode_actions])
+        	# self.expert_rewards = np.concatenate([self.expert_rewards, episode_rewards])
 
         # TODO: hyperparameters as follows:
         # batch_size = 32 (batch gradient descent)
@@ -179,7 +168,7 @@ def main(args):
     # TODO: Train cloned models using imitation learning, and record their
     #       performance.
     imitation = Imitation(model_config_path, expert_weights_path)
-    loss, acc = imitation.train(env, num_episodes=1, num_epochs=50, render=render)
+    loss, acc = imitation.train(env, num_episodes=100, num_epochs=50, render=render)
     # states, actions, rewards = imitation.run_expert(env, render) # imitation.generate_episode(imitation.expert, env, render)
 
     # TODO: Delete this for submission.  Toggle to check that model crashes w/o training
