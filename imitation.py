@@ -169,12 +169,18 @@ def main(args):
     #       performance.
     imitation = Imitation(model_config_path, expert_weights_path)
     loss, acc = imitation.train(env, num_episodes=100, num_epochs=50, render=render)
-    # states, actions, rewards = imitation.run_expert(env, render) # imitation.generate_episode(imitation.expert, env, render)
 
-    # TODO: Delete this for submission.  Toggle to check that model crashes w/o training
-    # states, actions, rewards = imitation.generate_episode(imitation.model, env, render)
-    # print(rewards)
-    # raw_input("Did it crash? (ends in -100)")
+    # For generating videos
+    NUM_DEMOS = 50 # Do not change, this is a fixed number
+    demo_rewards = []
+    demo_render = False
+    # raw_input("Press any key to run demos and record rewards")
+    for test in range(NUM_DEMOS):
+    	_, _, rewards = imitation.run_model(env, render=demo_render)
+    	reward_sum = np.sum(rewards)
+    	demo_rewards.append(reward_sum)
+    print("Mean of demos is: {}".format(np.mean(demo_rewards)))
+    print("Std of demos is {}".format(np.std(demo_rewards)))
 
 
 
