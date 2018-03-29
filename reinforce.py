@@ -9,15 +9,25 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+STATE_SPACE = 8
+ACTION_SPACE = 4
+
 
 class Reinforce(object):
     # Implementation of the policy gradient method REINFORCE.
 
     def __init__(self, model, lr):
         self.model = model
+        self.lr = lr # In case needed later
 
         # TODO: Define any training operations and optimizers here, initialize
         #       your variables, or alternately compile your model here.  
+
+        # TODO: If statement for loading trained weights
+        self.custom_adam = keras.optimizers.Adam(lr=lr)  # So that lr can be specified
+        self.model.compile(optimizer=self.custom_adam, loss='categorical_crossentropy', \
+            metrics=['categorical_accuracy']) 
+
 
     def train(self, env, gamma=1.0):
         # Trains the model on a single episode using REINFORCE.
@@ -32,11 +42,28 @@ class Reinforce(object):
         # - a list of actions, indexed by time step
         # - a list of rewards, indexed by time step
         # TODO: Implement this method.
-        states = []
-        actions = []
-        rewards = []
+        # NOTE: Used exact method as imitation.py
+        e_states = []
+        e_actions = []
+        e_rewards = []
 
-        return states, actions, rewards
+        done = False
+        state = env.reset()  # Restart the environment
+        while not done:  
+            e_states.append(state)  # TODO: Should this be done before or after reshape?
+            state = np.array([state])
+            model_output = self.model.predict(x = state, verbose = 0)  # Get action from model
+            action = np.argmax(model_output)  # Equivalent to greedy policy
+            action_vec = np.zeros(ACTION_SPACE)
+            action_vec[action] = 1
+            e_actions.append(action_vec)
+            state, reward, done, info = env.step(action)
+            e_rewards.append(reward)
+            if render:
+                env.render()
+
+
+        return np.array(e_states), np.array(e_actions), np.array(e_rewards)
 
 
 def parse_arguments():
@@ -79,6 +106,9 @@ def main(args):
         model = keras.models.model_from_json(f.read())
 
     # TODO: Train the model using REINFORCE and plot the learning curve.
+    reinforce = Reinforce(model, lr)  # Default learning rate is 0.0005
+
+    print(reinforce.generate_episode(env))
 
 
 if __name__ == '__main__':
