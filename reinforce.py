@@ -82,11 +82,12 @@ class Reinforce(object):
         action_log = keras.backend.log(y_pred)
         loss_product = keras.layers.multiply([action_log, self.return_tensor])
         # Should have dimension (1,), which keedims=True ensures -> https://keras.io/backend/
-        loss_sum = keras.backend.sum(loss_product, keepdims=True)  
-        negative_one_tensor = keras.backend.constant(-1, shape=(1,))
-        T_inverse_tensor = keras.backend.pow(self.T_tensor, negative_one_tensor)
-        reinforce_loss_tensor = keras.layers.multiply([loss_sum, T_inverse_tensor])
-        return reinforce_loss_tensor
+        # loss_sum = keras.backend.sum(loss_product, keepdims=True)  
+        # negative_one_tensor = keras.backend.constant(-1, shape=(1,))
+        # T_inverse_tensor = keras.backend.pow(self.T_tensor, negative_one_tensor)
+        # reinforce_loss_tensor = keras.layers.multiply([loss_sum, T_inverse_tensor])
+        # return reinforce_loss_tensor
+        return loss_product
 
     def train(self, env, gamma=1.0):  # Note: 
         # Trains the model on a single episode using REINFORCE.
@@ -95,13 +96,14 @@ class Reinforce(object):
 
         states, actions, rewards, returns, T = self.generate_episode(env)
 
-        # As stated in writeup
-        rewards /= 100
-        returns /= 100
+        # As stated in writeup - now in generate_episode
+        # rewards /= 100
+        # returns /= 100
 
         # Fit method requires labels, but our loss function doesn't use labels
         junk_labels = np.zeros(actions.shape)
         self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=T.size, verbose=0)
+        # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=1, verbose=0)
 
         return
 
@@ -132,6 +134,10 @@ class Reinforce(object):
             action_vec[action] = 1
             e_actions.append(action_vec)
             state, reward, done, info = env.step(action)
+            
+            # As stated in writeup
+            reward /= 100
+
             e_rewards.append(reward)
             if render:
                 env.render()
@@ -206,8 +212,8 @@ def main(args):
             for test_episode in range(100):  # Fixed by handout
                 states, actions, rewards, _, _ = reinforce.generate_episode(env)
                 cum_reward.append(np.sum(rewards))
-            mean = np.mean(cum_reward)
-            std = np.std(cum_reward)
+            mean = np.mean(cum_reward) * 100
+            std = np.std(cum_reward) * 100
             print("Mean cumulative reward is: {}".format(mean))
             print("Reward standard deviation is: {}".format(std))
             plt.errorbar(episode, mean, yerr=std, fmt='--o')
