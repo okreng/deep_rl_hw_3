@@ -26,16 +26,41 @@ class Reinforce(object):
         # TODO: If statement for loading trained weights
         self.custom_adam = keras.optimizers.Adam(lr=lr)  # So that lr can be specified
 
-        # TODO: Implement loss function
-        from keras import Input, Model
+        from keras import Input, Model, backend
+
+        # TODO: Do I need to define Keras lambda layers?
+        # def power_t(gamma_tensor, T_minus_t_tensor):
+        #     return keras.backend.pow(gamma_tensor, T_minus_t_tensor)
+
+        T_tensor = Input(shape=(1,), name='T')  # Add T=num_episodes as a tensor 
+        gamma_tensor = Input(shape=(1,), name='gamma')  # Add gamma = discount rate as tensor
+        # TODO: T needed?
+        time_step_tensor = Input(shape=(1,), name='time_step')  # Add time step as a tensor
         reward_tensor = Input(shape=(1,), name='reward')  # Add reward as a tensor
-        self.model = Model(inputs=[model.inputs[0], reward_tensor], outputs=model.outputs[0])
+
+        # Sum of the first n terms of geometric series: https://en.wikipedia.org/wiki/Geometric_series
+        # Define the reward as r_t * ((1-gamma^(T-t))/(1-gamma))
+        one_tensor = keras.backend.constant(1,shape=(1,))
+        negative_one_tensor = keras.backend.constant(-1, shape=(1,))
+        T_minus_t_tensor = keras.layers.subtract([T_tensor, time_step_tensor])
+        # return_gamma_numerator_tensor = keras.layers.Lambda(power_t(gamma_tensor, T_minus_t_tensor))   #
+        return_gamma_numerator_tensor = keras.backend.pow(gamma_tensor, T_minus_t_tensor)
+        return_numerator_tensor = keras.layers.subtract([one_tensor, return_gamma_numerator_tensor])
+        return_denominator_tensor = keras.layers.subtract([one_tensor, gamma_tensor])
+        return_denominator_inverse_tensor = keras.backend.pow(return_denominator_tensor, negative_one_tensor)
+        return_wo_reward_tensor = keras.layers.multiply([return_numerator_tensor, return_denominator_inverse_tensor])
+        return_t_tensor = keras.layers.multiply([reward_tensor, return_wo_reward_tensor])
+
+        self.model = Model(inputs=[model.inputs[0], reward_tensor, time_step_tensor, gamma_tensor, T_tensor], \
+                           outputs=[model.outputs[0], return_t_tensor])
         
         # TODO: Delete once no longer in use for troubleshooting
-        # for inputs in self.model.inputs:
-        #     print(inputs)
-        # for outputs in self.model.outputs:
-        #     print(outputs)
+        for inputs in self.model.inputs:
+            print(inputs)
+        for outputs in self.model.outputs:
+            print(outputs)
+
+        # TODO: Implement loss function
 
         # self.loss_function = self.reinforce_loss
         # TODO: Downscale the rewards by a factor of 100
