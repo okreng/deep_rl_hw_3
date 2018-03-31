@@ -72,7 +72,6 @@ class Reinforce(object):
 
         # TODO: Implement loss function
 
-        # self.loss_function = self.reinforce_loss()
         # TODO: Downscale the rewards by a factor of 100
         self.model.compile(optimizer=self.custom_adam, loss=self.reinforce_loss) 
 
@@ -88,10 +87,21 @@ class Reinforce(object):
         reinforce_loss_tensor = keras.layers.multiply([loss_sum, T_inverse_tensor])
         return reinforce_loss_tensor
 
-    def train(self, env, gamma=1.0):
+    def train(self, env, gamma=1.0):  # Note: 
         # Trains the model on a single episode using REINFORCE.
         # TODO: Implement this method. It may be helpful to call the class
         #       method generate_episode() to generate training data.
+
+        states, actions, rewards, returns, T = self.generate_episode(env)
+
+        # As stated in writeup
+        rewards /= 100
+        returns /= 100
+
+        # Fit method requires labels, but our loss function doesn't use labels
+        junk_labels = np.zeros(actions.shape)
+        self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=T.size, verbose=0)
+
         return
 
     def generate_episode(self, env, render=False):
@@ -184,7 +194,9 @@ def main(args):
     reinforce = Reinforce(model, lr)  # Default learning rate is 0.0005
 
     # print(reinforce.generate_episode(env))
-    reinforce.generate_episode(env)
+    # reinforce.generate_episode(env)
+
+    reinforce.train(env)
 
 
 if __name__ == '__main__':
