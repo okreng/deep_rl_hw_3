@@ -17,7 +17,7 @@ class Reinforce(object):
     # Implementation of the policy gradient method REINFORCE.
 
     def __init__(self, model, lr):
-        self.model = model
+        # self.model = model
         self.lr = lr # In case needed later
 
         # TODO: Define any training operations and optimizers here, initialize
@@ -25,8 +25,28 @@ class Reinforce(object):
 
         # TODO: If statement for loading trained weights
         self.custom_adam = keras.optimizers.Adam(lr=lr)  # So that lr can be specified
+
+        # TODO: Implement loss function
+        from keras import Input, Model
+        reward_tensor = Input(shape=(1,), name='reward')  # Add reward as a tensor
+        self.model = Model(inputs=[model.inputs[0], reward_tensor], outputs=model.outputs[0])
+        
+        # TODO: Delete once no longer in use for troubleshooting
+        # for inputs in self.model.inputs:
+        #     print(inputs)
+        # for outputs in self.model.outputs:
+        #     print(outputs)
+
+        # self.loss_function = self.reinforce_loss
+        # TODO: Downscale the rewards by a factor of 100
         self.model.compile(optimizer=self.custom_adam, loss='categorical_crossentropy', \
             metrics=['categorical_accuracy']) 
+
+
+    def reinforce_loss(self, y_true, y_pred):
+        #  Defines the REINFORCE loss function
+        pass
+
 
 
     def train(self, env, gamma=1.0):
@@ -108,7 +128,7 @@ def main(args):
     # TODO: Train the model using REINFORCE and plot the learning curve.
     reinforce = Reinforce(model, lr)  # Default learning rate is 0.0005
 
-    print(reinforce.generate_episode(env))
+    # print(reinforce.generate_episode(env))
 
 
 if __name__ == '__main__':
