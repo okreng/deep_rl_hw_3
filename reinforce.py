@@ -215,6 +215,7 @@ def main(args):
             plt.xlabel('Training episodes')
             plt.ylabel('Mean cumulative reward for 100 test episodes')
             plt.draw()
+            reinforce.model.save_weights("reinforce_model.h5")
     plt.show()
 
 
