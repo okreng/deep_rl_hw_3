@@ -7,8 +7,9 @@ from keras import Input, Model, backend
 import gym
 
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
 
 STATE_SPACE = 8
 ACTION_SPACE = 4
@@ -196,7 +197,26 @@ def main(args):
     # print(reinforce.generate_episode(env))
     # reinforce.generate_episode(env)
 
-    reinforce.train(env)
+    # plt.ion()
+    for episode in range(num_episodes):
+        reinforce.train(env)
+        if episode % 1000 == 0:
+            print("Episode: {}".format(episode))
+            cum_reward = []
+            for test_episode in range(100):  # Fixed by handout
+                states, actions, rewards, _, _ = reinforce.generate_episode(env)
+                cum_reward.append(np.sum(rewards))
+            mean = np.mean(cum_reward)
+            std = np.std(cum_reward)
+            print("Mean cumulative reward is: {}".format(mean))
+            print("Reward standard deviation is: {}".format(std))
+            plt.errorbar(episode, mean, yerr=std, fmt='--o')
+            plt.title("Mean reward over training episodes")
+            plt.xlabel('Training episodes')
+            plt.ylabel('Mean cumulative reward for 100 test episodes')
+            plt.draw()
+    plt.show()
+
 
 
 if __name__ == '__main__':
