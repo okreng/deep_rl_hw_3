@@ -20,7 +20,7 @@ class Reinforce(object):
     # Implementation of the policy gradient method REINFORCE.
 
     def __init__(self, model, lr):
-        # self.model = model
+        self.model = model
         self.lr = lr # In case needed later
 
         # TODO: Define any training operations and optimizers here, initialize
@@ -60,10 +60,10 @@ class Reinforce(object):
         # self.model = Model(inputs=[model.inputs[0], reward_tensor, time_step_tensor, gamma_tensor, T_tensor], \
         #                    outputs=[model.outputs[0], return_t_tensor])
 
-        self.return_tensor = Input(shape=(1,), name='return')
-        self.T_tensor = Input(shape=(1,), name='T')
+        # self.return_tensor = Input(shape=(1,), name='return')
+        # self.T_tensor = Input(shape=(1,), name='T')
 
-        self.model = Model(inputs=[model.inputs[0], self.return_tensor, self.T_tensor], outputs=[model.outputs[0]])
+        # self.model = Model(inputs=[model.inputs[0], self.return_tensor, self.T_tensor], outputs=[model.outputs[0]])
         
         # TODO: Delete once no longer in use for troubleshooting
         # for inputs in self.model.inputs:
@@ -80,7 +80,9 @@ class Reinforce(object):
     def reinforce_loss(self, y_true, y_pred):
         #  Defines the REINFORCE loss function
         action_log = keras.backend.log(y_pred)
-        loss_product = keras.layers.multiply([action_log, self.return_tensor])
+        # action_mask_action = keras.backend.argmax(y_pred)
+        # action_mask = keras.ba
+        loss_product = keras.layers.multiply([action_log, y_true])
         # Should have dimension (1,), which keedims=True ensures -> https://keras.io/backend/
         # loss_sum = keras.backend.sum(loss_product, keepdims=True)  
         # negative_one_tensor = keras.backend.constant(-1, shape=(1,))
@@ -101,8 +103,10 @@ class Reinforce(object):
         # returns /= 100
 
         # Fit method requires labels, but our loss function doesn't use labels
-        junk_labels = np.zeros(actions.shape)
-        self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=T.size, verbose=0)
+        # junk_labels = np.zeros(actions.shape)
+        self.model.fit(x=states, y=returns, batch_size=T.size, verbose=0)
+
+        # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=T.size, verbose=0)
         # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=1, verbose=0)
 
         return
@@ -128,7 +132,8 @@ class Reinforce(object):
             T += 1
             e_states.append(state)  # TODO: Should this be done before or after reshape?
             state = np.array([state])
-            model_output = self.model.predict(x = [state, return_t, T_tensor], verbose = 0)  # Get action from model
+            # model_output = self.model.predict(x = [state, return_t, T_tensor], verbose = 0)  # Get action from model
+            model_output = self.model.predict(x=state, verbose=0)
             action = np.argmax(model_output)  # Equivalent to greedy policy
             action_vec = np.zeros(ACTION_SPACE)
             action_vec[action] = 1
