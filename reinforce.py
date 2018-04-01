@@ -63,7 +63,11 @@ class Reinforce(object):
         # self.return_tensor = Input(shape=(1,), name='return')
         # self.T_tensor = Input(shape=(1,), name='T')
 
-        # self.model = Model(inputs=[model.inputs[0], self.return_tensor, self.T_tensor], outputs=[model.outputs[0]])
+        # self.output_choice = keras.backend.argmax(model.outputs[0])
+        # # self.choices_tensor = keras.backend.constant([0, 1, 2, 3])
+        # self.output_one_hot = keras.utils.to_categorical(self.output_choice[0])
+
+        # self.model = Model(inputs=[model.inputs[0]], outputs=[model.outputs[0], self.output_one_hot])
         
         # TODO: Delete once no longer in use for troubleshooting
         # for inputs in self.model.inputs:
@@ -81,14 +85,16 @@ class Reinforce(object):
         #  Defines the REINFORCE loss function
         action_log = keras.backend.log(y_pred)
         # action_mask_action = keras.backend.argmax(y_pred)
-        # action_mask = keras.ba
-        loss_product = keras.layers.multiply([action_log, y_true])
+        # loss_product_unmasked = keras.layers.multiply([action_log, y_true])
+        # action_mask = keras.utils.to_categorical(keras.backend.argmax(y_pred), num_classes = ACTION_SPACE)
+        # loss_product_masked = keras.layers.multiply([loss_product_unmasked, action_mask])
         # Should have dimension (1,), which keedims=True ensures -> https://keras.io/backend/
         # loss_sum = keras.backend.sum(loss_product, keepdims=True)  
         # negative_one_tensor = keras.backend.constant(-1, shape=(1,))
         # T_inverse_tensor = keras.backend.pow(self.T_tensor, negative_one_tensor)
         # reinforce_loss_tensor = keras.layers.multiply([loss_sum, T_inverse_tensor])
         # return reinforce_loss_tensor
+        loss_product = keras.layers.multiply([action_log, y_true])
         return loss_product
 
     def train(self, env, gamma=1.0):  # Note: 
@@ -96,7 +102,7 @@ class Reinforce(object):
         # TODO: Implement this method. It may be helpful to call the class
         #       method generate_episode() to generate training data.
 
-        states, actions, rewards, returns, T = self.generate_episode(env)
+        states, actions, actions_one_hot, rewards, returns, T = self.generate_episode(env)
 
         # As stated in writeup - now in generate_episode
         # rewards /= 100
@@ -104,7 +110,7 @@ class Reinforce(object):
 
         # Fit method requires labels, but our loss function doesn't use labels
         # junk_labels = np.zeros(actions.shape)
-        self.model.fit(x=states, y=returns, batch_size=T.size, verbose=0)
+        self.model.fit(x=states, y=returns, batch_size=T.size, verbose=0, class_weight=actions_one_hot)
 
         # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=T.size, verbose=0)
         # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=1, verbose=0)
@@ -160,7 +166,7 @@ class Reinforce(object):
         # print(e_rewards)
         # print(e_returns)
 
-        return np.array(e_states), np.array(model_output), np.array(e_rewards), e_returns, T_vector
+        return np.array(e_states), np.array(model_output), np.array(e_actions), np.array(e_rewards), e_returns, T_vector
 
 
 def parse_arguments():
@@ -215,7 +221,7 @@ def main(args):
             print("Episode: {}".format(episode))
             cum_reward = []
             for test_episode in range(100):  # Fixed by handout
-                states, actions, rewards, _, _ = reinforce.generate_episode(env)
+                states, _, actions, rewards, _, _ = reinforce.generate_episode(env)
                 cum_reward.append(np.sum(rewards))
             mean = np.mean(cum_reward) * 100
             std = np.std(cum_reward) * 100
