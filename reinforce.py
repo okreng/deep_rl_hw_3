@@ -160,7 +160,7 @@ class Reinforce(object):
         # print(e_rewards)
         # print(e_returns)
 
-        return np.array(e_states), np.array(e_actions), np.array(e_rewards), e_returns, T_vector
+        return np.array(e_states), np.array(model_output), np.array(e_rewards), e_returns, T_vector
 
 
 def parse_arguments():
