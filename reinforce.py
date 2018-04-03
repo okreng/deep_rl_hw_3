@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 STATE_SPACE = 8
 ACTION_SPACE = 4
-GAMMA = 0.99
+GAMMA = 1.00
 
 
 class Reinforce(object):
@@ -79,7 +79,7 @@ class Reinforce(object):
 
         # TODO: Downscale the rewards by a factor of 100
         # self.model.compile(optimizer=self.custom_adam, loss=self.reinforce_loss)
-        self.model.compile(optimizer=self.custom_adam, loss='categorical_crossentropy') 
+        self.model.compile(optimizer=self.custom_adam, loss=keras.losses.categorical_crossentropy) 
 
 
     # def reinforce_loss(self, y_true, y_pred):
@@ -103,16 +103,24 @@ class Reinforce(object):
         # TODO: Implement this method. It may be helpful to call the class
         #       method generate_episode() to generate training data.
 
-        states, actions, actions_one_hot, rewards, returns, T = self.generate_episode(env)
+        # states, actions, actions_one_hot, rewards, returns, T = self.generate_episode(env)
+        states, returns, _ = self.generate_episode(env)
 
+        # print(states.size)
+        # print(rewards.size)
         # As stated in writeup - now in generate_episode
         # rewards /= 100
         # returns /= 100
 
+        # print(len(states))
+        # print(len(returns))
+
+
         # Fit method requires labels, but our loss function doesn't use labels
         # junk_labels = np.zeros(actions.shape)
         # self.model.fit(x=states, y=returns, batch_size=T.size, verbose=0, class_weight=actions_one_hot)
-        self.model.fit(x=states, y=returns, batch_size=T.size, verbose=0)
+        # self.model.fit(x=states, y=returns, batch_size=int(np.floor(rewards.size/2)), verbose=0)
+        self.model.fit(x=states, y=returns, batch_size=len(states), verbose=0)
 
         # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=T.size, verbose=0)
         # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=1, verbose=0)
@@ -134,22 +142,25 @@ class Reinforce(object):
         done = False
         state = env.reset()  # Restart the environment
         T = 0
-        return_t = np.zeros(1)  # To pass in to predict
-        T_tensor = np.zeros(1)
+        # return_t = np.zeros(1)  # To pass in to predict
+        # T_tensor = np.zeros(1)
         while not done:
             T += 1
             e_states.append(state)  # TODO: Should this be done before or after reshape?
             state = np.array([state])
             # model_output = self.model.predict(x = [state, return_t, T_tensor], verbose = 0)  # Get action from model
             model_output = self.model.predict(x=state, verbose=0)
-            action = np.argmax(model_output)  # Equivalent to greedy policy
+            # action = np.argmax(model_output)  # Equivalent to greedy policy
+            probabilities = model_output/np.sum(model_output)
+            action = np.random.choice(a=range(ACTION_SPACE), size=1, p=probabilities.flatten())
+            action = action[0]
             action_vec = np.zeros(ACTION_SPACE)
             action_vec[action] = 1
             e_actions.append(action_vec)
             state, reward, done, info = env.step(action)
             
             # As stated in writeup
-            reward /= 100
+            # reward /= 100
 
             e_rewards.append(reward)
             if render:
@@ -168,13 +179,16 @@ class Reinforce(object):
                 e_return_vec[t, :] = e_returns[t]
             e_return_vec[t, :] = np.multiply(e_return_vec[t,:], e_actions[t])
 
+        # print(np.array(e_states))
+        e_return_vec /= 100
         # print(e_return_vec)
         
         # TODO: Delete these once done troubleshooting
         # print(e_rewards)
         # print(e_returns)
 
-        return np.array(e_states), np.array(model_output), np.array(e_actions), np.array(e_rewards), e_return_vec, T_vector
+        # return np.array(e_states), np.array(model_output), np.array(e_actions), np.array(e_rewards), e_return_vec, T_vector
+        return np.array(e_states), e_return_vec, np.array(e_rewards)
 
 
 def parse_arguments():
@@ -229,10 +243,11 @@ def main(args):
             print("Episode: {}".format(episode))
             cum_reward = []
             for test_episode in range(100):  # Fixed by handout
-                states, _, actions, rewards, _, _ = reinforce.generate_episode(env)
+                # states, _, actions, rewards, _, _ = reinforce.generate_episode(env)
+                states, returns, rewards = reinforce.generate_episode(env)
                 cum_reward.append(np.sum(rewards))
-            mean = np.mean(cum_reward) * 100
-            std = np.std(cum_reward) * 100
+            mean = np.mean(cum_reward) # * 100
+            std = np.std(cum_reward) # * 100
             print("Mean cumulative reward is: {}".format(mean))
             print("Reward standard deviation is: {}".format(std))
             plt.errorbar(episode, mean, yerr=std, fmt='--o')
