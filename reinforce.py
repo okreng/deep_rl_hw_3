@@ -78,24 +78,25 @@ class Reinforce(object):
         # TODO: Implement loss function
 
         # TODO: Downscale the rewards by a factor of 100
-        self.model.compile(optimizer=self.custom_adam, loss=self.reinforce_loss) 
+        # self.model.compile(optimizer=self.custom_adam, loss=self.reinforce_loss)
+        self.model.compile(optimizer=self.custom_adam, loss='categorical_crossentropy') 
 
 
-    def reinforce_loss(self, y_true, y_pred):
-        #  Defines the REINFORCE loss function
-        action_log = keras.backend.log(y_pred)
-        # action_mask_action = keras.backend.argmax(y_pred)
-        # loss_product_unmasked = keras.layers.multiply([action_log, y_true])
-        # action_mask = keras.utils.to_categorical(keras.backend.argmax(y_pred), num_classes = ACTION_SPACE)
-        # loss_product_masked = keras.layers.multiply([loss_product_unmasked, action_mask])
-        # Should have dimension (1,), which keedims=True ensures -> https://keras.io/backend/
-        # loss_sum = keras.backend.sum(loss_product, keepdims=True)  
-        # negative_one_tensor = keras.backend.constant(-1, shape=(1,))
-        # T_inverse_tensor = keras.backend.pow(self.T_tensor, negative_one_tensor)
-        # reinforce_loss_tensor = keras.layers.multiply([loss_sum, T_inverse_tensor])
-        # return reinforce_loss_tensor
-        loss_product = keras.layers.multiply([action_log, y_true])
-        return loss_product
+    # def reinforce_loss(self, y_true, y_pred):
+    #     #  Defines the REINFORCE loss function
+    #     action_log = keras.backend.log(y_pred)
+    #     # action_mask_action = keras.backend.argmax(y_pred)
+    #     # loss_product_unmasked = keras.layers.multiply([action_log, y_true])
+    #     # action_mask = keras.utils.to_categorical(keras.backend.argmax(y_pred), num_classes = ACTION_SPACE)
+    #     # loss_product_masked = keras.layers.multiply([loss_product_unmasked, action_mask])
+    #     # Should have dimension (1,), which keedims=True ensures -> https://keras.io/backend/
+    #     # loss_sum = keras.backend.sum(loss_product, keepdims=True)  
+    #     # negative_one_tensor = keras.backend.constant(-1, shape=(1,))
+    #     # T_inverse_tensor = keras.backend.pow(self.T_tensor, negative_one_tensor)
+    #     # reinforce_loss_tensor = keras.layers.multiply([loss_sum, T_inverse_tensor])
+    #     # return reinforce_loss_tensor
+    #     loss_product = keras.layers.multiply([action_log, y_true])
+    #     return loss_product
 
     def train(self, env, gamma=1.0):  # Note: 
         # Trains the model on a single episode using REINFORCE.
@@ -110,7 +111,8 @@ class Reinforce(object):
 
         # Fit method requires labels, but our loss function doesn't use labels
         # junk_labels = np.zeros(actions.shape)
-        self.model.fit(x=states, y=returns, batch_size=T.size, verbose=0, class_weight=actions_one_hot)
+        # self.model.fit(x=states, y=returns, batch_size=T.size, verbose=0, class_weight=actions_one_hot)
+        self.model.fit(x=states, y=returns, batch_size=T.size, verbose=0)
 
         # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=T.size, verbose=0)
         # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=1, verbose=0)
@@ -154,19 +156,25 @@ class Reinforce(object):
                 env.render()
         
         e_returns = np.zeros(T)
+        e_return_vec = np.zeros((T, ACTION_SPACE))
         T_vector = np.zeros(T)
         for t in reversed(range(T)):
             T_vector[t] = T
             if (t == T-1):
                 e_returns[t] = e_rewards[t]
+                e_return_vec[t, :] = e_returns[t]
             else:
                 e_returns[t] = e_rewards[t] + GAMMA*e_returns[t+1]
+                e_return_vec[t, :] = e_returns[t]
+            e_return_vec[t, :] = np.multiply(e_return_vec[t,:], e_actions[t])
+
+        # print(e_return_vec)
         
         # TODO: Delete these once done troubleshooting
         # print(e_rewards)
         # print(e_returns)
 
-        return np.array(e_states), np.array(model_output), np.array(e_actions), np.array(e_rewards), e_returns, T_vector
+        return np.array(e_states), np.array(model_output), np.array(e_actions), np.array(e_rewards), e_return_vec, T_vector
 
 
 def parse_arguments():
