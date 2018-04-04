@@ -98,13 +98,13 @@ class Reinforce(object):
     #     loss_product = keras.layers.multiply([action_log, y_true])
     #     return loss_product
 
-    def train(self, env, gamma=1.0):  # Note: 
+    def train(self, env, bias=0.0, gamma=1.0):  # Note: 
         # Trains the model on a single episode using REINFORCE.
         # TODO: Implement this method. It may be helpful to call the class
         #       method generate_episode() to generate training data.
 
         # states, actions, actions_one_hot, rewards, returns, T = self.generate_episode(env)
-        states, returns, _ = self.generate_episode(env)
+        states, returns, _ = self.generate_episode(env, bias)
 
         # print(states.size)
         # print(rewards.size)
@@ -113,7 +113,7 @@ class Reinforce(object):
         # returns /= 100
 
         # print(len(states))
-        # print(len(returns))
+        print(returns)
 
 
         # Fit method requires labels, but our loss function doesn't use labels
@@ -127,7 +127,7 @@ class Reinforce(object):
 
         return
 
-    def generate_episode(self, env, render=False):
+    def generate_episode(self, env, bias=0.0, render=False):
         # Generates an episode by executing the current policy in the given env.
         # Returns:
         # - a list of states, indexed by time step
@@ -172,10 +172,10 @@ class Reinforce(object):
         for t in reversed(range(T)):
             T_vector[t] = T
             if (t == T-1):
-                e_returns[t] = e_rewards[t]
+                e_returns[t] = e_rewards[t] - bias
                 e_return_vec[t, :] = e_returns[t]
             else:
-                e_returns[t] = e_rewards[t] + GAMMA*e_returns[t+1]
+                e_returns[t] = e_rewards[t] + GAMMA*e_returns[t+1] - bias
                 e_return_vec[t, :] = e_returns[t]
             e_return_vec[t, :] = np.multiply(e_return_vec[t,:], e_actions[t])
 
@@ -238,15 +238,17 @@ def main(args):
 
     # plt.ion()
     for episode in range(num_episodes):
-        reinforce.train(env)
         if episode % 1000 == 0:
             print("Episode: {}".format(episode))
             cum_reward = []
+            avg_reward = []
             for test_episode in range(100):  # Fixed by handout
                 # states, _, actions, rewards, _, _ = reinforce.generate_episode(env)
                 states, returns, rewards = reinforce.generate_episode(env)
                 cum_reward.append(np.sum(rewards))
+                avg_reward.append(np.mean(rewards))
             mean = np.mean(cum_reward) # * 100
+            bias = np.mean(avg_reward)
             std = np.std(cum_reward) # * 100
             print("Mean cumulative reward is: {}".format(mean))
             print("Reward standard deviation is: {}".format(std))
@@ -264,6 +266,9 @@ def main(args):
                 json_file.write(model_json)
             # serialize weights to HDF5
             model.save_weights("reinforce_model.h5")
+            print(bias)
+        reinforce.train(env, bias)
+
     plt.show()
 
 
