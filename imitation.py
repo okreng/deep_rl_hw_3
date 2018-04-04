@@ -62,30 +62,30 @@ class Imitation():
 
         # for episode in range(num_episodes):
 
-    	# TODO: Create first index by episode?  Seems reasonable
-    	e_states = []
-    	e_actions = []
-    	e_rewards = []
+        # TODO: Create first index by episode?  Seems reasonable
+        e_states = []
+        e_actions = []
+        e_rewards = []
 
-    	done = False
-    	state = env.reset()  # Restart the environment
-    	while not done:  
-    		e_states.append(state)  # TODO: Should this be done before or after reshape?
-    		state = np.array([state])
-    		model_output = model.predict(x = state, verbose = 0)  # Get action from model
-    		action = np.argmax(model_output)  # Equivalent to greedy policy
-    		action_vec = np.zeros(ACTION_SPACE)
-    		action_vec[action] = 1
-    		e_actions.append(action_vec)
-    		state, reward, done, info = env.step(action)
-    		e_rewards.append(reward)
-    		if render:
-    			env.render()
+        done = False
+        state = env.reset()  # Restart the environment
+        while not done:  
+            e_states.append(state)  # TODO: Should this be done before or after reshape?
+            state = np.array([state])
+            model_output = model.predict(x = state, verbose = 0)  # Get action from model
+            action = np.argmax(model_output)  # Equivalent to greedy policy
+            action_vec = np.zeros(ACTION_SPACE)
+            action_vec[action] = 1
+            e_actions.append(action_vec)
+            state, reward, done, info = env.step(action)
+            e_rewards.append(reward)
+            if render:
+                env.render()
 
-        	# # Add episode to list
-        	# states.append(e_states)
-        	# actions.append(e_actions)
-        	# rewards.append(e_rewards)
+            # # Add episode to list
+            # states.append(e_states)
+            # actions.append(e_actions)
+            # rewards.append(e_rewards)
 
         return np.array(e_states), np.array(e_actions), np.array(e_rewards)
         # return states, actions, rewards
@@ -110,14 +110,14 @@ class Imitation():
         self.expert_actions = np.empty((0, ACTION_SPACE))
         # self.expert_rewards = np.empty((0, 1))
         for episode in range(num_episodes):
-        	# TODO: rewards needed?
-        	episode_states, episode_actions, _ \
-        	= self.run_expert(env, render)
+            # TODO: rewards needed?
+            episode_states, episode_actions, _ \
+            = self.run_expert(env, render)
 
-        	# Episodes will be concatenated together into single array
-        	self.expert_states = np.concatenate([self.expert_states, episode_states])
-        	self.expert_actions = np.concatenate([self.expert_actions, episode_actions])
-        	# self.expert_rewards = np.concatenate([self.expert_rewards, episode_rewards])
+            # Episodes will be concatenated together into single array
+            self.expert_states = np.concatenate([self.expert_states, episode_states])
+            self.expert_actions = np.concatenate([self.expert_actions, episode_actions])
+            # self.expert_rewards = np.concatenate([self.expert_rewards, episode_rewards])
 
         # TODO: hyperparameters as follows:
         # batch_size = 32 (batch gradient descent)
@@ -176,9 +176,9 @@ def main(args):
     demo_render = False
     # raw_input("Press any key to run demos and record rewards")
     for test in range(NUM_DEMOS):
-    	_, _, rewards = imitation.run_model(env, render=demo_render)
-    	reward_sum = np.sum(rewards)
-    	demo_rewards.append(reward_sum)
+        _, _, rewards = imitation.run_model(env, render=demo_render)
+        reward_sum = np.sum(rewards)
+        demo_rewards.append(reward_sum)
     print("Mean of demos is: {}".format(np.mean(demo_rewards)))
     print("Std of demos is {}".format(np.std(demo_rewards)))
 
