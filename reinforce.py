@@ -256,7 +256,18 @@ def main(args):
             plt.ylabel('Mean cumulative reward for 100 test episodes')
             plt.draw()
             reinforce.model.save_weights("reinforce_model.h5")
+
+            # https://machinelearningmastery.com/save-load-keras-deep-learning-models/
+            # serialize model to JSON
+            model_json = model.to_json()
+            with open("reinforce_model.json", "w") as json_file:
+                json_file.write(model_json)
+            # serialize weights to HDF5
+            model.save_weights("reinforce_model.h5")
     plt.show()
+
+
+
 
 
 
