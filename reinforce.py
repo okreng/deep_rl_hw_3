@@ -113,7 +113,7 @@ class Reinforce(object):
         # returns /= 100
 
         # print(len(states))
-        print(returns)
+        # print(returns)
 
 
         # Fit method requires labels, but our loss function doesn't use labels
@@ -160,7 +160,7 @@ class Reinforce(object):
             state, reward, done, info = env.step(action)
             
             # As stated in writeup
-            # reward /= 100
+            reward /= 100
 
             e_rewards.append(reward)
             if render:
@@ -180,7 +180,7 @@ class Reinforce(object):
             e_return_vec[t, :] = np.multiply(e_return_vec[t,:], e_actions[t])
 
         # print(np.array(e_states))
-        e_return_vec /= 100
+        # e_return_vec /= 100
         # print(e_return_vec)
         
         # TODO: Delete these once done troubleshooting
