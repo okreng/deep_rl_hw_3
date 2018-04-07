@@ -30,12 +30,12 @@ class A2C(object):
         # - critic_model: The critic model.
         # - critic_lr: Learning rate for the critic model.
         # - n: The value of N in N-step A2C.
-        self.model = model
+        self.actor_model = model
         self.critic_model = critic_model
         self.n = n
 
         # TODO: Use this if loading weights
-        # self.model.load_weights('reinforce_model_no_bias_2.h5')
+        # self.actor_model.load_weights('reinforce_model_no_bias_2.h5')
 
 
         # TODO: Define any training operations and optimizers here, initialize
@@ -44,7 +44,7 @@ class A2C(object):
         self.custom_actor_adam = keras.optimizers.Adam(lr=lr)
         self.custom_critic_adam = keras.optimizers.Adam(lr=critic_lr)
 
-        self.model.compile(optimizer=self.custom_actor_adam, loss=keras.losses.categorical_crossentropy) 
+        self.actor_model.compile(optimizer=self.custom_actor_adam, loss=keras.losses.categorical_crossentropy) 
 
         self.critic_model.compile(optimizer=self.custom_critic_adam, loss=keras.losses.mean_squared_error)
 
@@ -54,11 +54,11 @@ class A2C(object):
         # TODO: Implement this method. It may be helpful to call the class
         #       method generate_episode() to generate training data.
 
-        states, R, actor_target = self.generate_episode(env, self.n)
+        states, R, actor_target, _ = self.generate_episode(env, self.n)
         batch = R.size
 
-        self.model.fit(x=states, y=actor_target, batch_size=batch, verbose=0)
-        
+        self.actor_model.fit(x=states, y=actor_target, batch_size=batch, verbose=0)
+
         self.critic_model.fit(x=states, y=R, batch_size=batch, verbose=0)
 
         return
@@ -87,7 +87,7 @@ class A2C(object):
             e_states.append(state)  # TODO: Should this be done before or after reshape?
             state = np.array([state])
             # model_output = self.model.predict(x = [state, return_t, T_tensor], verbose = 0)  # Get action from model
-            model_output = self.model.predict(x=state, verbose=0)
+            model_output = self.actor_model.predict(x=state, verbose=0)
 
             state_value = self.critic_model.predict(x=state, verbose=0)
             e_Vw.append(state_value[0][0])
@@ -129,7 +129,7 @@ class A2C(object):
         # print(actor_target)
         # print(e_rewards)
 
-        return np.array(e_states), R, actor_target
+        return np.array(e_states), R, actor_target, e_rewards
 
 
 class Critic_Model():
@@ -139,9 +139,11 @@ class Critic_Model():
         from keras.models import Model
         from keras.layers import Input, Dense
 
+        # TODO: Edit critic model
         in_layer = Input(shape=(STATE_SPACE,))
-        dense_1 = Dense(32)(in_layer)
-        out_layer = Dense(1)(dense_1)
+        dense_1 = Dense(16)(in_layer)
+        dense_2 = Dense(16)(dense_1)
+        out_layer = Dense(1)(dense_2)
 
         model = Model(inputs=in_layer, outputs=out_layer)
 
@@ -198,7 +200,7 @@ def main(args):
     
     # Load the actor model from file.
     with open(model_config_path, 'r') as f:
-        model = keras.models.model_from_json(f.read())
+        actor_model = keras.models.model_from_json(f.read())
     
     # Note: for some reason, cannot read both in a single open() call
 
@@ -209,10 +211,47 @@ def main(args):
         # Start with critic model same as actor model
         critic_model = keras.models.model_from_json(f.read())
 
-    actor_critic = A2C(model, lr, critic_model, critic_lr, n)
+    actor_critic = A2C(actor_model, lr, critic_model, critic_lr, n)
 
     # TODO: Train the model using A2C and plot the learning curves.
     actor_critic.train(env, n)
+
+    for episode in range(num_episodes):
+        if episode % 1000 == 0:
+            print("Episode: {}".format(episode))
+            cum_reward = []
+            # avg_reward = []
+            for test_episode in range(10):  # Fixed by handout
+                # states, _, actions, rewards, _, _ = reinforce.generate_episode(env)
+                states, _, _, rewards = actor_critic.generate_episode(env, n=0)
+                cum_reward.append(np.sum(rewards))
+                # avg_reward.append(np.mean(rewards))
+            mean = np.mean(cum_reward) * 100
+            # bias = np.mean(avg_reward)
+            std = np.std(cum_reward) * 100
+            print("Mean cumulative reward is: {}".format(mean))
+            print("Reward standard deviation is: {}".format(std))
+            plt.errorbar(episode, mean, yerr=std, fmt='--o')
+            plt.title("Mean reward over training episodes")
+            plt.xlabel('Training episodes')
+            plt.ylabel('Mean cumulative reward for 100 test episodes')
+            plt.draw()
+            # reinforce.model.save_weights("reinforce_model_no_bias_2.h5")
+
+            # https://machinelearningmastery.com/save-load-keras-deep-learning-models/
+            # serialize model to JSON
+            actor_json = actor_model.to_json()
+            with open("actor_0.json", "w") as json_file:
+                json_file.write(actor_json)
+            actor_critic.actor_model.save_weights("actor_0.h5")
+
+            critic_json = critic_model.to_json()
+            with open("critic_0.json", "w") as json_file:
+                json_file.write(critic_json)
+            actor_critic.critic_model.save_weights("critic_0.h5")
+        actor_critic.train(env, n)
+
+    plt.show()
 
 
 if __name__ == '__main__':
