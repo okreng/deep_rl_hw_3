@@ -84,7 +84,7 @@ class Reinforce(object):
 
         return
 
-    def generate_episode(self, env, bias=0.0, render=False):
+    def generate_episode(self, env, render=False):
         # Generates an episode by executing the current policy in the given env.
         # Returns:
         # - a list of states, indexed by time step
@@ -117,7 +117,7 @@ class Reinforce(object):
             state, reward, done, info = env.step(action)
             
             # As stated in writeup
-            # reward /= 100
+            reward /= 100
 
             e_rewards.append(reward)
             if render:
@@ -129,15 +129,15 @@ class Reinforce(object):
         for t in reversed(range(T)):
             T_vector[t] = T
             if (t == T-1):
-                e_returns[t] = e_rewards[t] - bias
+                e_returns[t] = e_rewards[t]
                 e_return_vec[t, :] = e_returns[t]
             else:
-                e_returns[t] = e_rewards[t] + GAMMA*e_returns[t+1] - bias
+                e_returns[t] = e_rewards[t] + GAMMA*e_returns[t+1]
                 e_return_vec[t, :] = e_returns[t]
             e_return_vec[t, :] = np.multiply(e_return_vec[t,:], e_actions[t])
 
         # print(np.array(e_states))
-        e_return_vec /= 100
+        # e_return_vec /= 100
         # print(e_return_vec)
         
         # TODO: Delete these once done troubleshooting
