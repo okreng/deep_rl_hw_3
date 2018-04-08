@@ -139,16 +139,59 @@ class Critic_Model():
         from keras.models import Model
         from keras.layers import Input, Dense
 
-        # TODO: Edit critic model
         in_layer = Input(shape=(STATE_SPACE,))
+
+################ BEGIN CRITIC MODEL  DEFINITIONS ################
+############## NOTE: Final layer must be out_layer ##############
+##############       First input is in_layer  ##################
+
+        # 2_16
+        # dense_1 = Dense(16)(in_layer)
+        # dense_2 = Dense(16)(dense_1)
+        # out_layer = Dense(1)(dense_2)
+
+        # 3_16
         dense_1 = Dense(16)(in_layer)
         dense_2 = Dense(16)(dense_1)
-        out_layer = Dense(1)(dense_2)
+        dense_3 = Dense(16)(dense_2)
+        out_layer = Dense(1)(dense_3)
+
+        # 3_funnel
+        # dense_1 = Dense(32)(in_layer)
+        # dense_2 = Dense(16)(dense_1)
+        # dense_3 = Dense(8)(dense_2)
+        # out_layer = Dense(1)(dense_3)
+
+        # 2_64
+        # dense_1 = Dense(64)(in_layer)
+        # dense_2 = Dense(64)(dense_1)
+        # out_layer = Dense(1)(dense_2)
+
+        # 3_pyramid
+        # dense_1 = Dense(8)(in_layer)
+        # dense_2 = Dense(16)(dense_1)
+        # dense_3 = Dense(32)(dense_2)
+        # out_layer = Dense(1)(dense_3)
+
+        # 3_64
+        # dense_1 = Dense(8)(in_layer)
+        # dense_2 = Dense(16)(dense_1)
+        # dense_3 = Dense(32)(dense_2)
+        # out_layer = Dense(1)(dense_3)
+
+        # 4_16
+        # dense_1 = Dense(16)(in_layer)
+        # dense_2 = Dense(16)(dense_1)
+        # dense_3 = Dense(16)(dense_2)
+        # dense_4 = Dense(16)(dense_3)
+        # out_layer = Dense(1)(dense_4)
+
+######################## END MODEL DEFINITIONS ##############
 
         model = Model(inputs=in_layer, outputs=out_layer)
 
         model_json = model.to_json()
-        with open("critic-config.json", "w") as json_file:
+        with open(critic_config_path, "w") as json_file:
             json_file.write(model_json)
 
 
@@ -156,12 +199,12 @@ class Critic_Model():
 def parse_arguments():
     # Command-line flags are defined here.
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model-config-path', dest='model_config_path',
-                        type=str, default='LunarLander-v2-config.json',
+    parser.add_argument('--actor-path', dest='actor_path',
+                        type=str, default='LunarLander-v2-config',
                         help="Path to the actor model config file.")
-    parser.add_argument('--critic-config-path', dest='critic_config_path',
-                        type=str, default='critic-config.json',
-                        help="Path to the actor model config file.")
+    parser.add_argument('--critic-path', dest='critic_path',
+                        type=str, default='critic-path',
+                        help="Path to the critic model config file.")
     parser.add_argument('--num-episodes', dest='num_episodes', type=int,
                         default=50000, help="Number of episodes to train on.")
     parser.add_argument('--lr', dest='lr', type=float,
@@ -187,8 +230,10 @@ def parse_arguments():
 def main(args):
     # Parse command-line arguments.
     args = parse_arguments()
-    model_config_path = args.model_config_path
-    critic_config_path = args.critic_config_path
+    actor_config_path = args.actor_path + '-config.json'
+    actor_weights_path = args.actor_path + '-weights.h5'
+    critic_config_path = args.critic_path + '-config.json'
+    critic_weights_path = args.critic_path + '-weights.h5'
     num_episodes = args.num_episodes
     lr = args.lr
     critic_lr = args.critic_lr
@@ -199,7 +244,7 @@ def main(args):
     env = gym.make('LunarLander-v2')
     
     # Load the actor model from file.
-    with open(model_config_path, 'r') as f:
+    with open(actor_config_path, 'r') as f:
         actor_model = keras.models.model_from_json(f.read())
     
     # Note: for some reason, cannot read both in a single open() call
@@ -241,14 +286,14 @@ def main(args):
             # https://machinelearningmastery.com/save-load-keras-deep-learning-models/
             # serialize model to JSON
             actor_json = actor_model.to_json()
-            with open("actor_0.json", "w") as json_file:
+            with open(actor_config_path, "w") as json_file:
                 json_file.write(actor_json)
-            actor_critic.actor_model.save_weights("actor_0.h5")
+            actor_critic.actor_model.save_weights(actor_weights_path)
 
             critic_json = critic_model.to_json()
-            with open("critic_0.json", "w") as json_file:
+            with open(critic_config_path, "w") as json_file:
                 json_file.write(critic_json)
-            actor_critic.critic_model.save_weights("critic_0.h5")
+            actor_critic.critic_model.save_weights(critic_weights_path)
         actor_critic.train(env, n)
 
     plt.show()
