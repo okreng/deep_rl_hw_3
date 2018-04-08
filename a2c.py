@@ -232,7 +232,7 @@ def main(args):
             print("Mean cumulative reward is: {}".format(mean))
             print("Reward standard deviation is: {}".format(std))
             plt.errorbar(episode, mean, yerr=std, fmt='--o')
-            plt.title("Mean reward over training episodes")
+            plt.title("Mean reward, n = {}".format(n))
             plt.xlabel('Training episodes')
             plt.ylabel('Mean cumulative reward for 100 test episodes')
             plt.draw()
