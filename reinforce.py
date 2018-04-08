@@ -247,9 +247,9 @@ def main(args):
                 states, returns, rewards = reinforce.generate_episode(env)
                 cum_reward.append(np.sum(rewards))
                 avg_reward.append(np.mean(rewards))
-            mean = np.mean(cum_reward) # * 100
+            mean = np.mean(cum_reward) * 100
             bias = np.mean(avg_reward)
-            std = np.std(cum_reward) # * 100
+            std = np.std(cum_reward) * 100
             print("Mean cumulative reward is: {}".format(mean))
             print("Reward standard deviation is: {}".format(std))
             plt.errorbar(episode, mean, yerr=std, fmt='--o')
@@ -262,12 +262,12 @@ def main(args):
             # https://machinelearningmastery.com/save-load-keras-deep-learning-models/
             # serialize model to JSON
             model_json = model.to_json()
-            with open("reinforce_model.json", "w") as json_file:
+            with open("reinforce_model2.json", "w") as json_file:
                 json_file.write(model_json)
             # serialize weights to HDF5
-            model.save_weights("reinforce_model.h5")
+            model.save_weights("reinforce_model2.h5")
             print(bias)
-        reinforce.train(env, bias)
+        reinforce.train(env)
 
     plt.show()
 
