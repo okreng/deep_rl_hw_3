@@ -221,7 +221,7 @@ def main(args):
             print("Episode: {}".format(episode))
             cum_reward = []
             # avg_reward = []
-            for test_episode in range(10):  # Fixed by handout
+            for test_episode in range(100):  # Fixed by handout
                 # states, _, actions, rewards, _, _ = reinforce.generate_episode(env)
                 states, _, _, rewards = actor_critic.generate_episode(env, n=0)
                 cum_reward.append(np.sum(rewards))
@@ -252,6 +252,14 @@ def main(args):
         actor_critic.train(env, n)
 
     plt.show()
+
+import signal
+def signal_handler(signal, frame):
+    print('Displaying training on exit:')
+    plt.show()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 
 if __name__ == '__main__':
