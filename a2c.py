@@ -45,8 +45,10 @@ class A2C(object):
         self.custom_critic_adam = keras.optimizers.Adam(lr=critic_lr)
 
         self.actor_model.compile(optimizer=self.custom_actor_adam, loss=keras.losses.categorical_crossentropy) 
-
         self.critic_model.compile(optimizer=self.custom_critic_adam, loss=keras.losses.mean_squared_error)
+
+        self.writer = tf.summary.FileWriter("./logs", graph=tf.get_default_graph())
+        self.merge_op = tf.summary.merge_all()
 
 
     def train(self, env, gamma=1.0):
@@ -145,46 +147,47 @@ class Critic_Model():
 ############## NOTE: Final layer must be out_layer ##############
 ##############       First input is in_layer  ##################
 
-        ##### 2_16
-        # dense_1 = Dense(16)(in_layer)
-        # dense_2 = Dense(16)(dense_1)
-        # out_layer = Dense(1)(dense_2)
 
-        ##### 3_16
-        # dense_1 = Dense(16)(in_layer)
-        # dense_2 = Dense(16)(dense_1)
-        # dense_3 = Dense(16)(dense_2)
-        # out_layer = Dense(1)(dense_3)
+        # 2_16
+        # dense_1 = Dense(16, activation='relu')(in_layer)
+        # dense_2 = Dense(16, activation='relu')(dense_1)
+        # out_layer = Dense(1, activation='relu')(dense_2)
 
-        ##### 3_funnel
-        # dense_1 = Dense(32)(in_layer)
-        # dense_2 = Dense(16)(dense_1)
-        # dense_3 = Dense(8)(dense_2)
-        # out_layer = Dense(1)(dense_3)
+        # 3_16
+        # dense_1 = Dense(16, activation='relu')(in_layer)
+        # dense_2 = Dense(16, activation='relu')(dense_1)
+        # dense_3 = Dense(16, activation='relu')(dense_2)
+        # out_layer = Dense(1, activation='relu')(dense_3)
 
-        ##### 2_64
-        # dense_1 = Dense(64)(in_layer)
-        # dense_2 = Dense(64)(dense_1)
-        # out_layer = Dense(1)(dense_2)
+        # 3_funnel
+        # dense_1 = Dense(32, activation='relu')(in_layer)
+        # dense_2 = Dense(16, activation='relu')(dense_1)
+        # dense_3 = Dense(8, activation='relu')(dense_2)
+        # out_layer = Dense(1, activation='relu')(dense_3)
 
-        ##### 3_pyramid
-        # dense_1 = Dense(8)(in_layer)
-        # dense_2 = Dense(16)(dense_1)
-        # dense_3 = Dense(32)(dense_2)
-        # out_layer = Dense(1)(dense_3)
+        # 2_64
+        # dense_1 = Dense(64, activation='relu')(in_layer)
+        # dense_2 = Dense(64, activation='relu')(dense_1)
+        # out_layer = Dense(1, activation='relu')(dense_2)
 
-        ##### 3_64
-        dense_1 = Dense(8)(in_layer)
-        dense_2 = Dense(16)(dense_1)
-        dense_3 = Dense(32)(dense_2)
-        out_layer = Dense(1)(dense_3)
+        # 3_pyramid
+        # dense_1 = Dense(8, activation='relu')(in_layer)
+        # dense_2 = Dense(16, activation='relu')(dense_1)
+        # dense_3 = Dense(32, activation='relu')(dense_2)
+        # out_layer = Dense(1, activation='relu')(dense_3)
 
-        ##### 4_16
-        # dense_1 = Dense(16)(in_layer)
-        # dense_2 = Dense(16)(dense_1)
-        # dense_3 = Dense(16)(dense_2)
-        # dense_4 = Dense(16)(dense_3)
-        # out_layer = Dense(1)(dense_4)
+        # 3_64
+        # dense_1 = Dense(8, activation='relu')(in_layer)
+        # dense_2 = Dense(16, activation='relu')(dense_1)
+        # dense_3 = Dense(32, activation='relu')(dense_2)
+        # out_layer = Dense(1, activation='relu')(dense_3)
+
+        # 4_16
+        dense_1 = Dense(16, activation='relu')(in_layer)
+        dense_2 = Dense(16, activation='relu')(dense_1)
+        dense_3 = Dense(16, activation='relu')(dense_2)
+        dense_4 = Dense(16, activation='relu')(dense_3)
+        out_layer = Dense(1, activation='relu')(dense_4)
 
 ######################## END MODEL DEFINITIONS ##############
 
@@ -200,7 +203,7 @@ def parse_arguments():
     # Command-line flags are defined here.
     parser = argparse.ArgumentParser()
     parser.add_argument('--actor-path', dest='actor_path',
-                        type=str, default='LunarLander-v2-config',
+                        type=str, default='LunarLander-v2',
                         help="Path to the actor model config file.")
     parser.add_argument('--critic-path', dest='critic_path',
                         type=str, default='critic-path',
@@ -272,6 +275,8 @@ def main(args):
                 cum_reward.append(np.sum(rewards))
                 # avg_reward.append(np.mean(rewards))
             mean = np.mean(cum_reward) * 100
+            summary = tf.Summary(value=[tf.Summary.Value(tag="Mean Rewards", simple_value=mean),])
+            actor_critic.writer.add_summary(summary, episode)
             # bias = np.mean(avg_reward)
             std = np.std(cum_reward) * 100
             print("Mean cumulative reward is: {}".format(mean))
