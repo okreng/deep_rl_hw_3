@@ -145,41 +145,41 @@ class Critic_Model():
 ############## NOTE: Final layer must be out_layer ##############
 ##############       First input is in_layer  ##################
 
-        # 2_16
+        ##### 2_16
         # dense_1 = Dense(16)(in_layer)
         # dense_2 = Dense(16)(dense_1)
         # out_layer = Dense(1)(dense_2)
 
-        # 3_16
-        dense_1 = Dense(16)(in_layer)
-        dense_2 = Dense(16)(dense_1)
-        dense_3 = Dense(16)(dense_2)
-        out_layer = Dense(1)(dense_3)
+        ##### 3_16
+        # dense_1 = Dense(16)(in_layer)
+        # dense_2 = Dense(16)(dense_1)
+        # dense_3 = Dense(16)(dense_2)
+        # out_layer = Dense(1)(dense_3)
 
-        # 3_funnel
+        ##### 3_funnel
         # dense_1 = Dense(32)(in_layer)
         # dense_2 = Dense(16)(dense_1)
         # dense_3 = Dense(8)(dense_2)
         # out_layer = Dense(1)(dense_3)
 
-        # 2_64
+        ##### 2_64
         # dense_1 = Dense(64)(in_layer)
         # dense_2 = Dense(64)(dense_1)
         # out_layer = Dense(1)(dense_2)
 
-        # 3_pyramid
+        ##### 3_pyramid
         # dense_1 = Dense(8)(in_layer)
         # dense_2 = Dense(16)(dense_1)
         # dense_3 = Dense(32)(dense_2)
         # out_layer = Dense(1)(dense_3)
 
-        # 3_64
-        # dense_1 = Dense(8)(in_layer)
-        # dense_2 = Dense(16)(dense_1)
-        # dense_3 = Dense(32)(dense_2)
-        # out_layer = Dense(1)(dense_3)
+        ##### 3_64
+        dense_1 = Dense(8)(in_layer)
+        dense_2 = Dense(16)(dense_1)
+        dense_3 = Dense(32)(dense_2)
+        out_layer = Dense(1)(dense_3)
 
-        # 4_16
+        ##### 4_16
         # dense_1 = Dense(16)(in_layer)
         # dense_2 = Dense(16)(dense_1)
         # dense_3 = Dense(16)(dense_2)

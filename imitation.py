@@ -108,6 +108,8 @@ class Imitation():
         # TODO: Add if statement to make loading a possibility
         self.expert_states = np.empty((0,STATE_SPACE))
         self.expert_actions = np.empty((0, ACTION_SPACE))
+
+        print(type(self.expert_states))
         # self.expert_rewards = np.empty((0, 1))
         for episode in range(num_episodes):
             # TODO: rewards needed?
@@ -168,7 +170,7 @@ def main(args):
     # TODO: Train cloned models using imitation learning, and record their
     #       performance.
     imitation = Imitation(model_config_path, expert_weights_path)
-    loss, acc = imitation.train(env, num_episodes=100, num_epochs=50, render=render)
+    loss, acc = imitation.train(env, num_episodes=1, num_epochs=50, render=render)
 
     # For generating videos
     NUM_DEMOS = 50 # Do not change, this is a fixed number
