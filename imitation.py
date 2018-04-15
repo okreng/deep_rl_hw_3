@@ -103,14 +103,14 @@ class Imitation():
 		# expert_actions = expert_actions.flatten()
 
 		# for i in range(expert_states.shape[2]):
-		# 	expert_states[:,:,0]
+		#   expert_states[:,:,0]
 
-		expert_states = np.squeeze(expert_states)
-		expert_actions = np.squeeze(expert_actions)
+		# expert_states = np.squeeze(expert_states)
+		# expert_actions = np.squeeze(expert_actions)
 		# pdb.set_trace()
 
 		expert_states = np.transpose(expert_states, (2,1,0))
-		expert_actions = np.transpose(expert_actions, (2,1,0))
+		expert_actions = np.transpose(expert_actions[:,:,0], (2,1,0))
 
 		# pdb.set_trace()
 
@@ -129,10 +129,10 @@ class Imitation():
 		# s = env.reset()
 
 		# for e in num_episodes:
-		# 	for i in range(len(expert_actions)):
-		# 		self.model.fit(s, expert_actions[i], batch_size=None, nb_epoch=num_epochs, verbose=1)
-		# 		output = self.model.predict(x, batch_size=None, verbose=0, steps=None)
-		# 		s, _, _, _ = env.step(np.argmax(output))
+		#   for i in range(len(expert_actions)):
+		#       self.model.fit(s, expert_actions[i], batch_size=None, nb_epoch=num_epochs, verbose=1)
+		#       output = self.model.predict(x, batch_size=None, verbose=0, steps=None)
+		#       s, _, _, _ = env.step(np.argmax(output))
 		print("{} are {}, {}".format(self.model.metrics_names, loss, acc))
 		
 		return loss, acc
@@ -167,17 +167,48 @@ def main(args):
 	model_config_path = args.model_config_path
 	expert_weights_path = args.expert_weights_path
 	render = args.render
-	
+	num_episodes = 1
 	# Create the environment.
 	env = gym.make('LunarLander-v2')
 	
 	# TODO: Train cloned models using imitation learning, and record their
 	#       performance.
 	imitation = Imitation(model_config_path, expert_weights_path)
-	_, _ = imitation.train(env, num_episodes=20, num_epochs=50, render=render)
+	_, _ = imitation.train(env, num_episodes=1, num_epochs=5000, render=render)
 
 	# Demo
-	imitation.run_model(env, num_episodes=10, render=render)
+	# imitation.run_model(env, num_episodes=10, render=render)
+
+	# For generating videos
+	NUM_DEMOS = 50 # Do not change, this is a fixed number
+	demo_rewards = []
+	demo_render = False
+	raw_input("Press any key to run demos and record rewards")
+	for test in range(NUM_DEMOS):
+		_, _, rewards = imitation.run_model(env, render=demo_render)
+		reward_sum = np.sum(rewards)
+		demo_rewards.append(reward_sum)
+
+	mean = np.mean(demo_rewards)
+	std = np.std(demo_rewards)
+	print("Mean of demos is: {}".format(mean))
+	print("Std of demos is {}".format(std))
+
+	# pdb.set_trace()
+	epochs = np.arange(NUM_DEMOS)
+	plt.plot(epochs, demo_rewards)
+	plt.ylim(-700, 300)
+	plt.title("Reward Plot for {} expert episodes".format(num_episodes))
+	plt.xlabel('Test Episode')
+	plt.ylabel('Reward')
+	# plt.draw()
+	plt.show()
+
+	# Rendering for a video
+	demo_render = True
+	_, _, _ = imitation.run_model(env, render=demo_render)
+	_, _, _ = imitation.run_model(env, render=demo_render)
+	_, _, _ = imitation.run_model(env, render=demo_render)
 
 
 	# TODO: Delete this for submission.  Toggle to check that model crashes w/o training
