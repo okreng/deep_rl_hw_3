@@ -3,11 +3,17 @@ import argparse
 import numpy as np
 import tensorflow as tf
 import keras
+from keras import Input, Model, backend
 import gym
 
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+
+STATE_SPACE = 8
+ACTION_SPACE = 4
+GAMMA = 1.00
 
 
 class Reinforce(object):
@@ -15,14 +21,67 @@ class Reinforce(object):
 
     def __init__(self, model, lr):
         self.model = model
+        self.lr = lr # In case needed later
+
+        self.model.load_weights('reinforce_model_no_bias.h5')
 
         # TODO: Define any training operations and optimizers here, initialize
         #       your variables, or alternately compile your model here.  
 
-    def train(self, env, gamma=1.0):
+        # TODO: If statement for loading trained weights
+        self.custom_adam = keras.optimizers.Adam(lr=lr)  # So that lr can be specified
+
+
+
+
+        # TODO: Downscale the rewards by a factor of 100
+        # self.model.compile(optimizer=self.custom_adam, loss=self.reinforce_loss)
+        self.model.compile(optimizer=self.custom_adam, loss=keras.losses.categorical_crossentropy) 
+
+
+    # def reinforce_loss(self, y_true, y_pred):
+    #     #  Defines the REINFORCE loss function
+    #     action_log = keras.backend.log(y_pred)
+    #     # action_mask_action = keras.backend.argmax(y_pred)
+    #     # loss_product_unmasked = keras.layers.multiply([action_log, y_true])
+    #     # action_mask = keras.utils.to_categorical(keras.backend.argmax(y_pred), num_classes = ACTION_SPACE)
+    #     # loss_product_masked = keras.layers.multiply([loss_product_unmasked, action_mask])
+    #     # Should have dimension (1,), which keedims=True ensures -> https://keras.io/backend/
+    #     # loss_sum = keras.backend.sum(loss_product, keepdims=True)  
+    #     # negative_one_tensor = keras.backend.constant(-1, shape=(1,))
+    #     # T_inverse_tensor = keras.backend.pow(self.T_tensor, negative_one_tensor)
+    #     # reinforce_loss_tensor = keras.layers.multiply([loss_sum, T_inverse_tensor])
+    #     # return reinforce_loss_tensor
+    #     loss_product = keras.layers.multiply([action_log, y_true])
+    #     return loss_product
+
+    def train(self, env, bias=0.0, gamma=1.0):  # Note: 
         # Trains the model on a single episode using REINFORCE.
         # TODO: Implement this method. It may be helpful to call the class
         #       method generate_episode() to generate training data.
+
+        # states, actions, actions_one_hot, rewards, returns, T = self.generate_episode(env)
+        states, returns, _ = self.generate_episode(env, bias)
+
+        # print(states.size)
+        # print(rewards.size)
+        # As stated in writeup - now in generate_episode
+        # rewards /= 100
+        # returns /= 100
+
+        # print(len(states))
+        # print(returns)
+
+
+        # Fit method requires labels, but our loss function doesn't use labels
+        # junk_labels = np.zeros(actions.shape)
+        # self.model.fit(x=states, y=returns, batch_size=T.size, verbose=0, class_weight=actions_one_hot)
+        # self.model.fit(x=states, y=returns, batch_size=int(np.floor(rewards.size/2)), verbose=0)
+        self.model.fit(x=states, y=returns, batch_size=len(states), verbose=0)
+
+        # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=T.size, verbose=0)
+        # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=1, verbose=0)
+
         return
 
     def generate_episode(self, env, render=False):
@@ -32,11 +91,61 @@ class Reinforce(object):
         # - a list of actions, indexed by time step
         # - a list of rewards, indexed by time step
         # TODO: Implement this method.
-        states = []
-        actions = []
-        rewards = []
+        # NOTE: Used exact method as imitation.py
+        e_states = []
+        e_actions = []
+        e_rewards = []
 
-        return states, actions, rewards
+        done = False
+        state = env.reset()  # Restart the environment
+        T = 0
+        # return_t = np.zeros(1)  # To pass in to predict
+        # T_tensor = np.zeros(1)
+        while not done:
+            T += 1
+            e_states.append(state)  # TODO: Should this be done before or after reshape?
+            state = np.array([state])
+            # model_output = self.model.predict(x = [state, return_t, T_tensor], verbose = 0)  # Get action from model
+            model_output = self.model.predict(x=state, verbose=0)
+            # action = np.argmax(model_output)  # Equivalent to greedy policy
+            probabilities = model_output/np.sum(model_output)
+            action = np.random.choice(a=range(ACTION_SPACE), size=1, p=probabilities.flatten())
+            action = action[0]
+            action_vec = np.zeros(ACTION_SPACE)
+            action_vec[action] = 1
+            e_actions.append(action_vec)
+            state, reward, done, info = env.step(action)
+            
+            # As stated in writeup
+            reward /= 100
+
+            e_rewards.append(reward)
+            if render:
+                env.render()
+        
+        e_returns = np.zeros(T)
+        e_return_vec = np.zeros((T, ACTION_SPACE))
+        T_vector = np.zeros(T)
+        for t in reversed(range(T)):
+            T_vector[t] = T
+            if (t == T-1):
+                e_returns[t] = e_rewards[t]
+                e_return_vec[t, :] = e_returns[t]
+            else:
+                e_returns[t] = e_rewards[t] + GAMMA*e_returns[t+1]
+                e_return_vec[t, :] = e_returns[t]
+            e_return_vec[t, :] = np.multiply(e_return_vec[t,:], e_actions[t])
+
+        # print(np.array(e_states))
+        # e_return_vec /= 100
+        # print(e_return_vec)
+        
+        # TODO: Delete these once done troubleshooting
+        # print(e_rewards)
+        # print(e_returns)
+
+        # return np.array(e_states), np.array(model_output), np.array(e_actions), np.array(e_rewards), e_return_vec, T_vector
+        return np.array(e_states), e_return_vec, np.array(e_rewards)
 
 
 def parse_arguments():
@@ -79,6 +188,50 @@ def main(args):
         model = keras.models.model_from_json(f.read())
 
     # TODO: Train the model using REINFORCE and plot the learning curve.
+    reinforce = Reinforce(model, lr)  # Default learning rate is 0.0005
+
+    # print(reinforce.generate_episode(env))
+    # reinforce.generate_episode(env)
+
+    # plt.ion()
+    for episode in range(num_episodes):
+        if episode % 1000 == 0:
+            print("Episode: {}".format(episode))
+            cum_reward = []
+            # avg_reward = []
+            for test_episode in range(100):  # Fixed by handout
+                # states, _, actions, rewards, _, _ = reinforce.generate_episode(env)
+                states, returns, rewards = reinforce.generate_episode(env)
+                cum_reward.append(np.sum(rewards))
+                # avg_reward.append(np.mean(rewards))
+            mean = np.mean(cum_reward) # * 100
+            # bias = np.mean(avg_reward)
+            std = np.std(cum_reward) # * 100
+            print("Mean cumulative reward is: {}".format(mean))
+            print("Reward standard deviation is: {}".format(std))
+            plt.errorbar(episode, mean, yerr=std, fmt='--o')
+            plt.title("Mean reward over training episodes")
+            plt.xlabel('Training episodes')
+            plt.ylabel('Mean cumulative reward for 100 test episodes')
+            plt.draw()
+            # reinforce.model.save_weights("reinforce_model_no_bias_2.h5")
+
+            # https://machinelearningmastery.com/save-load-keras-deep-learning-models/
+            # serialize model to JSON
+            model_json = model.to_json()
+            with open("reinforce_model_no_bias_continued.json", "w") as json_file:
+                json_file.write(model_json)
+            # serialize weights to HDF5
+            reinforce.model.save_weights("reinforce_model_no_bias_continued.h5")
+            # print(bias)
+        # reinforce.train(env, bias)
+        reinforce.train(env)
+
+    plt.show()
+
+
+
+
 
 
 if __name__ == '__main__':
