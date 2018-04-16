@@ -149,49 +149,52 @@ class Critic_Model():
 
 
         # 2_16
-        # dense_1 = Dense(16, activation='relu')(in_layer)
-        # dense_2 = Dense(16, activation='relu')(dense_1)
-        # out_layer = Dense(1, activation='relu')(dense_2)
+        # dense_1 = Dense(16, activation='tanh')(in_layer)
+        # dense_2 = Dense(16, activation='tanh')(dense_1)
+        # out_layer = Dense(1)(dense_2)
 
         # 3_16
         # dense_1 = Dense(16, activation='relu')(in_layer)
         # dense_2 = Dense(16, activation='relu')(dense_1)
         # dense_3 = Dense(16, activation='relu')(dense_2)
-        # out_layer = Dense(1, activation='relu')(dense_3)
+        # out_layer = Dense(1)(dense_3)
 
         # 3_funnel
-        # dense_1 = Dense(32, activation='relu')(in_layer)
-        # dense_2 = Dense(16, activation='relu')(dense_1)
-        # dense_3 = Dense(8, activation='relu')(dense_2)
-        # out_layer = Dense(1, activation='relu')(dense_3)
+        dense_1 = Dense(32, activation='relu')(in_layer)
+        dense_2 = Dense(16, activation='relu')(dense_1)
+        dense_3 = Dense(8)(dense_2)
+        out_layer = Dense(1)(dense_3)
 
         # 2_64
-        # dense_1 = Dense(64, activation='relu')(in_layer)
-        # dense_2 = Dense(64, activation='relu')(dense_1)
-        # out_layer = Dense(1, activation='relu')(dense_2)
+        # dense_1 = Dense(64, activation='sigmoid')(in_layer)
+        # dense_2 = Dense(64, activation='sigmoid')(dense_1)
+        # out_layer = Dense(1)(dense_2)
 
         # 3_pyramid
         # dense_1 = Dense(8, activation='relu')(in_layer)
         # dense_2 = Dense(16, activation='relu')(dense_1)
         # dense_3 = Dense(32, activation='relu')(dense_2)
-        # out_layer = Dense(1, activation='relu')(dense_3)
+        # out_layer = Dense(1)(dense_3)
 
         # 3_64
         # dense_1 = Dense(8, activation='relu')(in_layer)
         # dense_2 = Dense(16, activation='relu')(dense_1)
         # dense_3 = Dense(32, activation='relu')(dense_2)
-        # out_layer = Dense(1, activation='relu')(dense_3)
+        # out_layer = Dense(1)(dense_3)
 
         # 4_16
-        dense_1 = Dense(16, activation='relu')(in_layer)
-        dense_2 = Dense(16, activation='relu')(dense_1)
-        dense_3 = Dense(16, activation='relu')(dense_2)
-        dense_4 = Dense(16, activation='relu')(dense_3)
-        out_layer = Dense(1, activation='relu')(dense_4)
+        # dense_1 = Dense(16, activation='relu')(in_layer)
+        # dense_2 = Dense(16, activation='relu')(dense_1)
+        # dense_3 = Dense(16, activation='relu')(dense_2)
+        # dense_4 = Dense(16, activation='relu')(dense_3)
+        # out_layer = Dense(1)(dense_4)
 
 ######################## END MODEL DEFINITIONS ##############
 
-        model = Model(inputs=in_layer, outputs=out_layer)
+        # model = Model(inputs=in_layer, outputs=out_layer)
+
+        with open(critic_config_path, "r") as f:
+            model = keras.models.model_from_json(f.read())
 
         model_json = model.to_json()
         with open(critic_config_path, "w") as json_file:
@@ -258,6 +261,10 @@ def main(args):
     with open(critic_config_path, 'r') as f:
         # Start with critic model same as actor model
         critic_model = keras.models.model_from_json(f.read())
+
+    # critic_model.load_weights(critic_weights_path)
+
+    # actor_model.load_weights(actor_weights_path)
 
     actor_critic = A2C(actor_model, lr, critic_model, critic_lr, n)
 
