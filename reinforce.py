@@ -31,9 +31,6 @@ class Reinforce(object):
         # TODO: If statement for loading trained weights
         self.custom_adam = keras.optimizers.Adam(lr=lr)  # So that lr can be specified
 
-
-
-
         # TODO: Downscale the rewards by a factor of 100
         # self.model.compile(optimizer=self.custom_adam, loss=self.reinforce_loss)
         self.model.compile(optimizer=self.custom_adam, loss=keras.losses.categorical_crossentropy) 
@@ -63,24 +60,7 @@ class Reinforce(object):
         # states, actions, actions_one_hot, rewards, returns, T = self.generate_episode(env)
         states, returns, _ = self.generate_episode(env, bias)
 
-        # print(states.size)
-        # print(rewards.size)
-        # As stated in writeup - now in generate_episode
-        # rewards /= 100
-        # returns /= 100
-
-        # print(len(states))
-        # print(returns)
-
-
-        # Fit method requires labels, but our loss function doesn't use labels
-        # junk_labels = np.zeros(actions.shape)
-        # self.model.fit(x=states, y=returns, batch_size=T.size, verbose=0, class_weight=actions_one_hot)
-        # self.model.fit(x=states, y=returns, batch_size=int(np.floor(rewards.size/2)), verbose=0)
         self.model.fit(x=states, y=returns, batch_size=len(states), verbose=0)
-
-        # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=T.size, verbose=0)
-        # self.model.fit(x=[states, returns, T], y=junk_labels, batch_size=1, verbose=0)
 
         return
 
@@ -136,15 +116,6 @@ class Reinforce(object):
                 e_return_vec[t, :] = e_returns[t]
             e_return_vec[t, :] = np.multiply(e_return_vec[t,:], e_actions[t])
 
-        # print(np.array(e_states))
-        # e_return_vec /= 100
-        # print(e_return_vec)
-        
-        # TODO: Delete these once done troubleshooting
-        # print(e_rewards)
-        # print(e_returns)
-
-        # return np.array(e_states), np.array(model_output), np.array(e_actions), np.array(e_rewards), e_return_vec, T_vector
         return np.array(e_states), e_return_vec, np.array(e_rewards)
 
 
@@ -228,11 +199,6 @@ def main(args):
         reinforce.train(env)
 
     plt.show()
-
-
-
-
-
 
 if __name__ == '__main__':
     main(sys.argv)
